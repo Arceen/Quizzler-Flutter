@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:quizzler/quizbrain.dart';
+import 'package:rflutter_alert/rflutter_alert.dart';
 
 void main() => runApp(Quizzler());
 
@@ -25,6 +27,55 @@ class QuizPage extends StatefulWidget {
 }
 
 class _QuizPageState extends State<QuizPage> {
+  List<Widget> scores = [];
+  QuizBrain quizBrain = new QuizBrain();
+  void resetAlert() {
+    if (quizBrain.noMoreQuestions()) {
+      Alert(
+        context: context,
+        type: AlertType.success,
+        title: "Quiz Finished",
+        desc: "You were cool!",
+        buttons: [
+          DialogButton(
+            child: Text(
+              "Try again?",
+              style: TextStyle(color: Colors.white, fontSize: 20),
+            ),
+            onPressed: () {
+              setState(() {
+                scores = [];
+                quizBrain = new QuizBrain();
+              });
+              Navigator.pop(context);
+            },
+            width: 120,
+          )
+        ],
+      ).show();
+      setState(() {
+        scores = [];
+        quizBrain = new QuizBrain();
+      });
+    }
+  }
+
+  void checkAnswer(bool myAnswer) {
+    if (quizBrain.getQuestionAnswer() == myAnswer) {
+      setState(() {
+        scores.add(Icon(Icons.check, color: Colors.green));
+        quizBrain.getNextQuestion();
+        resetAlert();
+      });
+    } else {
+      setState(() {
+        scores.add(Icon(Icons.close, color: Colors.red));
+        quizBrain.getNextQuestion();
+        resetAlert();
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -37,7 +88,9 @@ class _QuizPageState extends State<QuizPage> {
             padding: EdgeInsets.all(10.0),
             child: Center(
               child: Text(
-                'This is where the question text will go.',
+                (quizBrain.noMoreQuestions())
+                    ? "No more questions"
+                    : quizBrain.getQuestionText(),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 25.0,
@@ -62,6 +115,10 @@ class _QuizPageState extends State<QuizPage> {
               ),
               onPressed: () {
                 //The user picked true.
+                if (quizBrain.noMoreQuestions()) {
+                  return;
+                }
+                checkAnswer(true);
               },
             ),
           ),
@@ -78,13 +135,18 @@ class _QuizPageState extends State<QuizPage> {
                   color: Colors.white,
                 ),
               ),
+              disabledColor: Colors.grey,
               onPressed: () {
                 //The user picked false.
+                if (quizBrain.noMoreQuestions()) {
+                  return;
+                }
+                checkAnswer(false);
               },
             ),
           ),
         ),
-        //TODO: Add a Row here as your score keeper
+        Row(children: scores),
       ],
     );
   }
